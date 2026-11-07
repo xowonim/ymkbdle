@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>유메키보들보들</title>
+<meta name="description" content="여섯 번의 도전 안에 유메키보와 관련된 단어를 맞혀보세요.">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --accent:#9B85AD;
+  --ink:#222;
+  --sub:#777;
+  --line:#d9d9d9;
+  --correct:#6aaa64;
+  --present:#c9b458;
+  --absent:#86888a;
+  --r:3px;
+  --ts:48px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#fff;color:var(--ink);
+  font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+button{font-family:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation}
+.app{max-width:480px;height:100dvh;margin:0 auto;display:flex;flex-direction:column;padding:0 16px}
+
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:52px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--accent)}
+.hbtn{width:32px;height:32px;display:flex;align-items:center;color:var(--sub)}
+.hbtn.left{justify-self:start;justify-content:flex-start}
+.hbtn.right{justify-self:end;justify-content:flex-end}
+
+#info{display:none}
+#info b{color:var(--ink);font-weight:700}
+
+#testbar{display:none;text-align:center;font-size:11px;color:var(--sub);padding:6px 0 0}
+body.test #testbar{display:block}
+#testbar span{margin-right:6px}
+#testbar button{border:1px solid var(--line);border-radius:var(--r);padding:3px 8px;margin:0 2px;font-size:11px;font-weight:600}
+
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
+#board{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;gap:5px}
+.row{display:flex;gap:5px;min-height:var(--ts)}
+.tile{width:var(--ts);height:var(--ts);border:1px solid #d3d6da;border-radius:var(--r);display:flex;align-items:center;justify-content:center;
+  font-size:calc(var(--ts)*.5);font-weight:700;user-select:none;background:#fff}
+.tile.filled{border-color:#878a8c}
+.tile.pop{animation:pop .1s ease}
+.tile.flip{animation:flip .5s ease}
+.tile.correct{background:var(--correct);border-color:var(--correct);color:#fff}
+.tile.present{background:var(--present);border-color:var(--present);color:#fff}
+.tile.absent{background:var(--absent);border-color:var(--absent);color:#fff}
+.row.shake{animation:shake .5s ease}
+@keyframes pop{50%{transform:scale(1.08)}}
+@keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-6px)}40%,60%{transform:translateX(6px)}}
+#preview{height:26px;margin-top:10px;font-size:15px;font-weight:600;color:var(--sub);letter-spacing:.04em}
+
+#kb{padding:6px 0 calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:7px}
+.krow{display:flex;gap:5px;justify-content:center}
+.key{flex:1;max-width:46px;height:50px;background:#e3dee8;border-radius:var(--r);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;user-select:none}
+.key.wide{flex:1.7;max-width:70px;font-size:13px;background:#d3d6da}
+.key:active{opacity:.7}
+.key.correct{background:var(--correct);color:#fff}
+.key.present{background:var(--present);color:#fff}
+.key.absent{background:var(--absent);color:#fff}
+
+#toast{position:fixed;top:68px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--ink);border-radius:var(--r);
+  padding:9px 16px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;white-space:nowrap}
+#toast.show{opacity:1}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}
+.overlay.open{display:flex}
+.modal{background:#fff;width:100%;max-width:420px;max-height:88dvh;overflow:auto;padding:22px 20px 22px;position:relative;border:1px solid var(--line);border-radius:var(--r)}
+.close{position:absolute;top:10px;right:14px;font-size:24px;line-height:1;color:var(--sub)}
+.modal h2{margin:0 0 14px;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.modal p{margin:0 0 6px;font-size:14px;line-height:1.6;letter-spacing:-.01em}
+.modal .sub{color:var(--sub);font-size:13px}
+.ex{margin:16px 0 0}
+.ex .row{gap:4px;margin-bottom:6px;min-height:0}
+.ex .tile{width:34px;height:34px;font-size:16px}
+.hr{height:1px;background:var(--line);margin:16px 0}
+
+.nums{display:flex;justify-content:space-between;text-align:center;margin-bottom:16px}
+.nums div{flex:1}
+.nums b{display:block;font-size:24px;font-weight:800}
+.nums span{font-size:11px;color:var(--sub)}
+.dist{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.drow{display:flex;align-items:center;gap:8px;font-size:12px}
+.drow i{width:10px;font-style:normal;color:var(--sub)}
+.bar{background:var(--accent);color:#fff;font-weight:700;padding:1px 6px;min-width:20px;text-align:right;border-radius:var(--r)}
+.bar.today{background:var(--correct)}
+.result{text-align:center}
+.result .ans{font-size:26px;font-weight:800;margin:4px 0 2px;letter-spacing:-.02em}
+.result .msg{font-size:13px;color:var(--sub);margin-bottom:10px}
+.result .row{justify-content:center;margin-bottom:12px;min-height:0}
+.result .tile{width:30px;height:30px;font-size:14px}
+.cd{font-size:13px;color:var(--sub);margin-top:10px}
+.cd b{color:var(--ink);font-variant-numeric:tabular-nums}
+.share{display:block;width:100%;margin-top:6px;padding:13px;background:var(--accent);color:#fff;border-radius:var(--r);font-size:15px;font-weight:700;text-align:center}
+.share:active{opacity:.8}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <button class="hbtn left" id="btnHelp" type="button" aria-label="도움말">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.3a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.4-2.8 4"/><circle cx="12" cy="17.4" r=".6" fill="currentColor"/></svg>
+    </button>
+    <h1>유메키보들보들</h1>
+    <button class="hbtn right" id="btnStats" type="button" aria-label="기록">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g stroke="none"><rect x="3.6" y="10" width="4.4" height="11.5" rx="1.2" fill="currentColor"/><rect x="9.8" y="2.5" width="4.4" height="19" rx="1.2" style="fill:var(--accent)"/><rect x="16" y="6.5" width="4.4" height="15" rx="1.2" fill="currentColor"/></g></svg>
+    </button>
+  </header>
+  <div id="info"></div>
+  <div id="testbar"><span>테스트 모드</span><button type="button" id="btnNext">새 단어로 테스트</button><button type="button" id="btnReset">기록 초기화</button></div>
+  <main>
+    <div id="board"></div>
+    <div id="preview"></div>
+  </main>
+  <div id="kb"></div>
+</div>
+<div id="toast"></div>
+
+<div class="overlay" id="mHelp">
+  <div class="modal">
+    <button class="close" type="button" data-close>×</button>
+    <h2>어떻게 할까?</h2>
+    <p>여섯 번의 도전 안에 유메키보와 관련된 단어를 맞혀봅시다.</p>
+    <p>한글 단어를 풀어쓴 후 <b>입력</b>을 누르면 칸 색깔이 변합니다!</p>
+    <div class="ex" id="exBox"></div>
+    <div class="hr"></div>
+    <p>“유메키보들보들”은 자정에 갱신됩니다.</p>
+  </div>
+</div>
+
+<div class="overlay" id="mStats">
+  <div class="modal">
+    <button class="close" type="button" data-close>×</button>
+    <div id="statsBody"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* 테스트 중에는 true, 실제 배포할 때는 false 로 바꿔주세요 */
+const TEST_MODE = false;
+
+/* ---------- 단어 목록 ---------- */
+const RAW = `어뮤즈, 비올라, 다운, 핀드, 플루이드, 코위스, 라인아웃, 로터스, 레이도스, 로사, 루드, 루트, 스와네글, 토닉, 트립, 트시크로, 벨벳, 모치, 키츠네, 타츠로, 히로토, 츄시로, 이치고, 아야토, 세츠나, 켄타, 미노리, 미로, 렌, 카이, 사쿠라, 유키, 신지, 우미, 케이쇼, 카오리, 토오루, 시온, 이오리, 츠토무, 헤이지, 유이토, 토마, 아스카, 아로마, 카논, 리온, 켄, 카이로, 루이, 토시미, 히라시, 아카리, 시류, 잇세이, 유우토, 소우, 시게루, 아츠시, 마모루, 아트, 우즈키, 미츠키, 이즈미, 로나, 주율, 레이센, 아키라, 츠바사, 보탄, 류, 시로, 미츠루, 루키하, 레미, 테이, 큐, 레이무, 유타, 사나기, 아우라, 치리, 사에, 키미, 노조미, 코하쿠, 이나, 케이코, 아이리, 세이카, 스바루, 히로, 사나에, 가라테, 댄스부, 밴드부, 사진부, 승마부, 양궁, 연극, 요리부, 육상, 토자부, 자습부, 해탐부, 후커스, 킹덤, 핀치, 이그나이어, 이비트리오, 대유잼조`;
+const LIST = [...new Set(RAW.split(',').map(s => s.trim()).filter(Boolean))];
+
+/* ---------- 자모 처리 ---------- */
+const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+const JUNG = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+const JONG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const SPLIT = {
+  'ㄲ':'ㄱㄱ','ㄸ':'ㄷㄷ','ㅃ':'ㅂㅂ','ㅆ':'ㅅㅅ','ㅉ':'ㅈㅈ',
+  'ㄳ':'ㄱㅅ','ㄵ':'ㄴㅈ','ㄶ':'ㄴㅎ','ㄺ':'ㄹㄱ','ㄻ':'ㄹㅁ','ㄼ':'ㄹㅂ','ㄽ':'ㄹㅅ','ㄾ':'ㄹㅌ','ㄿ':'ㄹㅍ','ㅀ':'ㄹㅎ','ㅄ':'ㅂㅅ',
+  'ㅐ':'ㅏㅣ','ㅒ':'ㅑㅣ','ㅔ':'ㅓㅣ','ㅖ':'ㅕㅣ',
+  'ㅘ':'ㅗㅏ','ㅙ':'ㅗㅏㅣ','ㅚ':'ㅗㅣ','ㅝ':'ㅜㅓ','ㅞ':'ㅜㅓㅣ','ㅟ':'ㅜㅣ','ㅢ':'ㅡㅣ'
+};
+const VMERGE = {'ㅗㅏ':'ㅘ','ㅘㅣ':'ㅙ','ㅗㅣ':'ㅚ','ㅜㅓ':'ㅝ','ㅝㅣ':'ㅞ','ㅜㅣ':'ㅟ','ㅡㅣ':'ㅢ','ㅏㅣ':'ㅐ','ㅑㅣ':'ㅒ','ㅓㅣ':'ㅔ','ㅕㅣ':'ㅖ'};
+const TMERGE = {'ㄱㄱ':'ㄲ','ㄱㅅ':'ㄳ','ㄴㅈ':'ㄵ','ㄴㅎ':'ㄶ','ㄹㄱ':'ㄺ','ㄹㅁ':'ㄻ','ㄹㅂ':'ㄼ','ㄹㅅ':'ㄽ','ㄹㅌ':'ㄾ','ㄹㅍ':'ㄿ','ㄹㅎ':'ㅀ','ㅂㅅ':'ㅄ','ㅅㅅ':'ㅆ'};
+const LMERGE = {'ㄱㄱ':'ㄲ','ㄷㄷ':'ㄸ','ㅂㅂ':'ㅃ','ㅅㅅ':'ㅆ','ㅈㅈ':'ㅉ'};
+const VOWELS = 'ㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣ';
+const isV = j => VOWELS.includes(j);
+
+function decompose(word){
+  const out = [];
+  for (const ch of word){
+    const c = ch.charCodeAt(0) - 0xAC00;
+    if (c < 0 || c > 11171){ out.push(...(SPLIT[ch] || ch)); continue; }
+    const l = Math.floor(c / 588), v = Math.floor((c % 588) / 28), t = c % 28;
+    for (const j of [CHO[l], JUNG[v], JONG[t]]){
+      if (!j) continue;
+      out.push(...(SPLIT[j] || j));
+    }
+  }
+  return out;
+}
+
+function compose(js){
+  let out = '', ok = true, L = null, V = null, T = null;
+  const flush = () => {
+    if (L && V) out += String.fromCharCode(0xAC00 + CHO.indexOf(L) * 588 + JUNG.indexOf(V) * 28 + JONG.indexOf(T || ''));
+    else { if (L){ out += L; ok = false; } if (V){ out += V; ok = false; } }
+    L = V = T = null;
+  };
+  for (const j of js){
+    if (!isV(j)){
+      if (!L && !V) L = j;
+      else if (L && !V){ const m = LMERGE[L + j]; if (m) L = m; else { flush(); L = j; } }
+      else if (!L && V){ flush(); L = j; }
+      else if (!T){ if (JONG.includes(j)) T = j; else { flush(); L = j; } }
+      else { const m = TMERGE[T + j]; if (m) T = m; else { flush(); L = j; } }
+    } else {
+      if (!L && !V) V = j;
+      else if (L && !V) V = j;
+      else if (!T){ const m = VMERGE[V + j]; if (m) V = m; else { flush(); V = j; } }
+      else {
+        let nl; const t = T;
+        if (t === 'ㅆ'){ T = 'ㅅ'; nl = 'ㅅ'; }
+        else if (t === 'ㄲ'){ nl = t; T = null; }
+        else if (SPLIT[t] && t.length === 1 && SPLIT[t].length === 2 && !LMERGE[SPLIT[t]]){ T = SPLIT[t][0]; nl = SPLIT[t][1]; }
+        else { nl = t; T = null; }
+        flush(); L = nl; V = j;
+      }
+    }
+  }
+  flush();
+  return { text: out, ok };
+}
+
+const MAX_LEN = Math.max(...LIST.map(w => decompose(w).length));
+const MAX_TRY = 6;
+
+/* ---------- 오늘의 단어 (한국 시간 자정 기준) ---------- */
+const KST = 9 * 3600e3;
+const kstDay = () => Math.floor((Date.now() + KST) / 86400e3);
+const START_DAY = Math.floor(Date.UTC(2026, 10, 7) / 86400e3);
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+/* 매일 랜덤으로 뽑되, 한 번 나온 단어는 이후 7일간 나오지 않습니다 (모든 단어를 소진해도 계속 이어짐) */
+const COOLDOWN = 7;
+function answerFor(d){
+  const n = LIST.length;
+  const win = Math.min(COOLDOWN, n - 1);
+  const recent = [];
+  let pick = 0;
+  for (let i = 0; i <= d; i++){
+    const r = mulberry32(Math.imul(i + 1, 2654435761) ^ 0x5bd1e995);
+    const cand = [];
+    for (let k = 0; k < n; k++) if (!recent.includes(k)) cand.push(k);
+    pick = cand[Math.floor(r() * cand.length)];
+    recent.push(pick);
+    if (recent.length > win) recent.shift();
+  }
+  return LIST[pick];
+}
+const BASE_DAY = Math.max(0, kstDay() - START_DAY);
+
+/* ---------- 저장 (저장소를 쓸 수 없으면 메모리에만 보관) ---------- */
+const SFX = TEST_MODE ? '-test' : '';
+const SK = 'ymkbdle-state' + SFX, TK = 'ymkbdle-stats' + SFX, OK = 'ymkbdle-offset' + SFX, SEEN = 'ymkbdle-seen';
+const mem = {};
+const load = (k, d) => {
+  try { const v = JSON.parse(localStorage.getItem(k)); if (v !== null && v !== undefined) return v; } catch (e) {}
+  return k in mem ? mem[k] : d;
+};
+const save = (k, v) => { mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const wipe = k => { delete mem[k]; try { localStorage.removeItem(k); } catch (e) {} };
+const newStats = () => ({ played: 0, wins: 0, streak: 0, max: 0, lastWin: null, dist: [0, 0, 0, 0, 0, 0] });
+
+/* ---------- 게임 상태 ---------- */
+let offset = TEST_MODE ? (parseInt(load(OK, 0), 10) || 0) : 0;
+let DAY, NO, WORD, ANS, N, state, stats;
+let cur = [], busy = false, gen = 0;
+const keyState = {};
+const revealed = () => state.guesses.length > 0;
+
+function evaluate(guess){
+  const res = Array(guess.length).fill('absent');
+  const cnt = {};
+  for (let i = 0; i < N; i++){
+    if (guess[i] === ANS[i]) res[i] = 'correct';
+    else cnt[ANS[i]] = (cnt[ANS[i]] || 0) + 1;
+  }
+  for (let i = 0; i < guess.length; i++){
+    if (res[i] === 'correct') continue;
+    if (cnt[guess[i]] > 0){ res[i] = 'present'; cnt[guess[i]]--; }
+  }
+  return res;
+}
+
+/* ---------- DOM ---------- */
+const $ = s => document.querySelector(s);
+const board = $('#board'), kb = $('#kb'), preview = $('#preview'), toastEl = $('#toast');
+if (TEST_MODE) document.body.classList.add('test');
+const rowEls = [];
+const keyEls = {};
+
+for (let r = 0; r < MAX_TRY; r++){
+  const row = document.createElement('div');
+  row.className = 'row';
+  board.appendChild(row);
+  rowEls.push(row);
+}
+
+function colsNeeded(){
+  if (revealed()) return Math.max(N, state.guesses[0].length);
+  return MAX_LEN;
+}
+function sizeTiles(){
+  const cols = colsNeeded();
+  const w = Math.min(window.innerWidth, 480) - 32;
+  let ts = Math.floor((w - (cols - 1) * 5) / cols);
+  const avail = window.innerHeight - 52 - 30 - 36 - 200 - 16 - (TEST_MODE ? 28 : 0);
+  ts = Math.min(ts, Math.floor((avail - 25) / MAX_TRY), 58);
+  ts = Math.max(ts, 22);
+  document.documentElement.style.setProperty('--ts', ts + 'px');
+}
+window.addEventListener('resize', sizeTiles);
+
+function paintRow(r, jamos, res, count){
+  const row = rowEls[r];
+  while (row.children.length > count) row.lastChild.remove();
+  while (row.children.length < count) row.appendChild(document.createElement('div'));
+  for (let i = 0; i < count; i++){
+    const t = row.children[i];
+    t.className = 'tile' + (jamos[i] ? ' filled' : '') + (res ? ' ' + res[i] : '');
+    t.textContent = jamos[i] || '';
+  }
+}
+
+function setInfo(){
+  $('#info').innerHTML = '';
+}
+
+function renderAll(){
+  sizeTiles();
+  const r0 = state.guesses.length;
+  for (let r = 0; r < MAX_TRY; r++){
+    if (r < r0) paintRow(r, state.guesses[r], evaluate(state.guesses[r]), state.guesses[r].length);
+    else if (r === r0 && !state.over) paintRow(r, cur, null, revealed() ? N : MAX_LEN);
+    else paintRow(r, [], null, revealed() ? N : MAX_LEN);
+  }
+  setInfo();
+}
+
+function updateCurrent(){
+  const r = state.guesses.length;
+  if (r >= MAX_TRY) return;
+  sizeTiles();
+  paintRow(r, cur, null, revealed() ? N : MAX_LEN);
+  preview.textContent = cur.length ? compose(cur).text : '';
+}
+
+/* 키보드 */
+const LAYOUT = [
+  ['ㅂ','ㅈ','ㄷ','ㄱ','ㅅ','ㅛ','ㅕ','ㅑ'],
+  ['ㅁ','ㄴ','ㅇ','ㄹ','ㅎ','ㅗ','ㅓ','ㅏ','ㅣ'],
+  ['ENTER','ㅋ','ㅌ','ㅊ','ㅍ','ㅠ','ㅜ','ㅡ','BACK']
+];
+LAYOUT.forEach(keys => {
+  const row = document.createElement('div');
+  row.className = 'krow';
+  keys.forEach(k => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'key';
+    if (k === 'ENTER'){ b.classList.add('wide'); b.textContent = '입력'; b.addEventListener('click', submit); }
+    else if (k === 'BACK'){ b.classList.add('wide'); b.textContent = '삭제'; b.addEventListener('click', del); }
+    else { b.textContent = k; keyEls[k] = b; b.addEventListener('click', () => add(k)); }
+    row.appendChild(b);
+  });
+  kb.appendChild(row);
+});
+
+function setKey(j, st){
+  const rank = { absent: 1, present: 2, correct: 3 };
+  if (!keyEls[j]) return;
+  if ((rank[keyState[j]] || 0) >= rank[st]) return;
+  keyState[j] = st;
+  keyEls[j].classList.remove('absent', 'present', 'correct');
+  keyEls[j].classList.add(st);
+}
+function resetKeys(){
+  Object.keys(keyState).forEach(k => delete keyState[k]);
+  Object.values(keyEls).forEach(el => el.classList.remove('absent', 'present', 'correct'));
+}
+
+/* 토스트 */
+let toastTimer;
+function toast(msg, ms = 1400){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
+}
+
+/* 입력 */
+function add(j){
+  if (busy || state.over) return;
+  if (cur.length >= (revealed() ? N : MAX_LEN)) return;
+  cur.push(j);
+  updateCurrent();
+  const t = rowEls[state.guesses.length].children[cur.length - 1];
+  if (t) t.classList.add('pop');
+}
+function del(){
+  if (busy || state.over || !cur.length) return;
+  cur.pop();
+  updateCurrent();
+}
+function shake(r){
+  rowEls[r].classList.remove('shake');
+  void rowEls[r].offsetWidth;
+  rowEls[r].classList.add('shake');
+}
+function submit(){
+  if (busy || state.over) return;
+  const r = state.guesses.length;
+  const first = r === 0;
+  if (first){
+    if (cur.length < 2){ toast('두 칸 이상 입력해 주세요'); if (cur.length) shake(r); return; }
+  } else if (cur.length < N){
+    toast('칸을 모두 채워주세요'); shake(r); return;
+  }
+  const c = compose(cur);
+  if (!c.ok){ toast('올바른 글자 조합이 아닙니다'); shake(r); return; }
+
+  const guess = cur.slice();
+  const res = evaluate(guess);
+  state.guesses.push(guess);
+  cur = [];
+  preview.textContent = '';
+  busy = true;
+  const g = gen;
+
+  const L = guess.length;
+  const step = Math.min(250, Math.floor(1500 / L));
+  const tiles = [...rowEls[r].children].slice(0, L);
+  tiles.forEach((t, i) => {
+    setTimeout(() => {
+      if (g !== gen) return;
+      t.classList.add('flip');
+      setTimeout(() => { if (g !== gen) return; t.classList.remove('filled'); t.classList.add(res[i]); }, 250);
+    }, i * step);
+  });
+  setTimeout(() => {
+    if (g !== gen) return;
+    guess.forEach((j, i) => setKey(j, res[i]));
+    const win = L === N && res.every(x => x === 'correct');
+    const lose = !win && state.guesses.length >= MAX_TRY;
+    if (win || lose) finish(win); else save(SK, state);
+    if (first) renderAll();
+    busy = false;
+    if (win || lose) setTimeout(() => { if (g === gen) openStats(); }, 500);
+  }, (L - 1) * step + 550);
+}
+
+function finish(win){
+  state.over = true;
+  state.won = win;
+  if (!state.counted){
+    state.counted = true;
+    stats.played++;
+    if (win){
+      stats.wins++;
+      stats.streak = stats.lastWin === DAY - 1 ? stats.streak + 1 : 1;
+      stats.lastWin = DAY;
+      stats.max = Math.max(stats.max, stats.streak);
+      stats.dist[state.guesses.length - 1]++;
+    } else {
+      stats.streak = 0;
+    }
+    save(TK, stats);
+  }
+  save(SK, state);
+}
+
+/* 물리 키보드 */
+const KMAP = {KeyQ:'ㅂ',KeyW:'ㅈ',KeyE:'ㄷ',KeyR:'ㄱ',KeyT:'ㅅ',KeyY:'ㅛ',KeyU:'ㅕ',KeyI:'ㅑ',
+  KeyA:'ㅁ',KeyS:'ㄴ',KeyD:'ㅇ',KeyF:'ㄹ',KeyG:'ㅎ',KeyH:'ㅗ',KeyJ:'ㅓ',KeyK:'ㅏ',KeyL:'ㅣ',
+  KeyZ:'ㅋ',KeyX:'ㅌ',KeyC:'ㅊ',KeyV:'ㅍ',KeyB:'ㅠ',KeyN:'ㅜ',KeyM:'ㅡ'};
+const SHIFT_DOUBLE = {KeyQ:'ㅂ',KeyW:'ㅈ',KeyE:'ㄷ',KeyR:'ㄱ',KeyT:'ㅅ'};
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const modalOpen = document.querySelector('.overlay.open');
+  if (e.key === 'Escape' && modalOpen){ closeAll(); return; }
+  if (modalOpen) return;
+  if (e.key === 'Enter'){ e.preventDefault(); submit(); return; }
+  if (e.key === 'Backspace'){ e.preventDefault(); del(); return; }
+  const c = e.code;
+  if (e.shiftKey && SHIFT_DOUBLE[c]){ add(SHIFT_DOUBLE[c]); add(SHIFT_DOUBLE[c]); return; }
+  if (c === 'KeyO'){ add(e.shiftKey ? 'ㅑ' : 'ㅏ'); add('ㅣ'); return; }
+  if (c === 'KeyP'){ add(e.shiftKey ? 'ㅕ' : 'ㅓ'); add('ㅣ'); return; }
+  if (KMAP[c]) add(KMAP[c]);
+});
+
+/* ---------- 모달 ---------- */
+function closeAll(){ document.querySelectorAll('.overlay').forEach(o => o.classList.remove('open')); }
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o || e.target.hasAttribute('data-close')) closeAll(); });
+});
+$('#btnHelp').addEventListener('click', () => { closeAll(); $('#mHelp').classList.add('open'); });
+$('#btnStats').addEventListener('click', openStats);
+
+function exRow(jamos, idx, st){
+  const row = document.createElement('div');
+  row.className = 'row';
+  jamos.forEach((j, i) => {
+    const t = document.createElement('div');
+    t.className = 'tile' + (i === idx ? ' ' + st : '');
+    t.textContent = j;
+    row.appendChild(t);
+  });
+  return row;
+}
+(function buildHelp(){
+  const box = $('#exBox');
+  const items = [
+    [['ㅅ','ㅓ','ㅣ','ㅇ','ㅣ','ㅋ','ㅏ'], 5, 'correct', '자음 ‘ㅋ’은 올바른 자리에 있습니다.'],
+    [['ㄴ','ㅗ','ㅈ','ㅗ','ㅁ','ㅣ'], 5, 'present', '모음 ‘ㅣ’는 잘못된 자리에 있습니다.'],
+    [['ㅇ','ㅣ','ㅈ','ㅡ','ㅁ','ㅣ'], 3, 'absent', '모음 ‘ㅡ’는 어느 곳에도 맞지 않습니다.'],
+    [['ㅋ','ㅓ','ㅣ','ㅇ','ㅣ','ㅅ','ㅛ'], -1, '', '복합모음과 쌍자음, 겹받침은 더 작은 자모들로 풀어집니다. 자모는 중복될 수 있습니다.']
+  ];
+  items.forEach(([jm, idx, st, txt]) => {
+    box.appendChild(exRow(jm, idx, st));
+    const p = document.createElement('p');
+    p.textContent = txt;
+    p.style.marginBottom = '14px';
+    box.appendChild(p);
+  });
+})();
+
+function shareText(){
+  const link = location.href.split('#')[0].split('?')[0];
+  const mark = { correct: '🟩', present: '🟨', absent: '⬜️' };
+  const score = state.won ? state.guesses.length : 'X';
+  let head = `유메키보들보들 ${NO} ${score}/${MAX_TRY} ${link}`;
+  if (state.won && stats.streak > 0) head += ` 🔥${stats.streak}`;
+  const rows = state.guesses.map(g => evaluate(g).map(x => mark[x]).join('')).join('\n');
+  return head + '\n\n' + rows;
+}
+async function doShare(){
+  const text = shareText();
+  const coarse = window.matchMedia && matchMedia('(pointer:coarse)').matches;
+  if (coarse && navigator.share){
+    try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('결과를 복사했습니다');
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (_) {}
+    ta.remove();
+    toast(ok ? '결과를 복사했습니다' : '복사에 실패했습니다');
+  }
+}
+
+function openStats(){
+  closeAll();
+  const s = stats;
+  const pct = s.played ? Math.round(s.wins / s.played * 100) : 0;
+  const curStreak = s.lastWin !== null && s.lastWin >= DAY - 1 ? s.streak : 0;
+  const mx = Math.max(1, ...s.dist);
+  let h = '';
+  if (state.over){
+    h += `<div class="result"><div class="ans">${WORD}</div>
+      ${state.won ? `<div class="msg">${state.guesses.length}번 만에 맞혔습니다</div>` : ''}
+      <div class="row">${ANS.map(j => `<div class="tile correct">${j}</div>`).join('')}</div></div><div class="hr"></div>`;
+  }
+  h += `<h2>기록</h2>
+    <div class="nums">
+      <div><b>${s.played}</b><span>플레이</span></div>
+      <div><b>${pct}</b><span>승률(%)</span></div>
+      <div><b>${curStreak}</b><span>연승</span></div>
+      <div><b>${s.max}</b><span>최대 연승</span></div>
+    </div>
+    <div class="dist">${s.dist.map((n, i) => {
+      const w = Math.max(8, Math.round(n / mx * 100));
+      const today = state.over && state.won && state.guesses.length === i + 1;
+      return `<div class="drow"><i>${i + 1}</i><div class="bar${today ? ' today' : ''}" style="width:${w}%">${n}</div></div>`;
+    }).join('')}</div>`;
+  if (state.over){
+    h += `<button class="share" type="button" id="btnShare">결과 공유하기</button>
+      <div class="cd" style="text-align:center">다음 단어까지 <b id="cd"></b></div>`;
+  }
+  $('#statsBody').innerHTML = h;
+  const sb = $('#btnShare');
+  if (sb) sb.addEventListener('click', doShare);
+  tick();
+  $('#mStats').classList.add('open');
+}
+
+/* ---------- 자정 갱신 ---------- */
+const pad = n => String(n).padStart(2, '0');
+function tick(){
+  if (Math.max(0, kstDay() - START_DAY) !== BASE_DAY){ location.reload(); return; }
+  const el = $('#cd');
+  if (!el) return;
+  const next = (kstDay() + 1) * 86400e3 - KST;
+  const left = Math.max(0, next - Date.now());
+  el.textContent = `${pad(Math.floor(left / 3600e3))}:${pad(Math.floor(left % 3600e3 / 60e3))}:${pad(Math.floor(left % 60e3 / 1e3))}`;
+}
+setInterval(tick, 1000);
+
+/* ---------- 게임 시작 ---------- */
+function startGame(){
+  gen++;
+  DAY = BASE_DAY + offset;
+  NO = DAY + 1;
+  WORD = answerFor(DAY);
+  ANS = decompose(WORD);
+  N = ANS.length;
+  state = load(SK, null);
+  if (!state || state.day !== DAY) state = { day: DAY, guesses: [], over: false, won: false, counted: false };
+  stats = load(TK, null) || newStats();
+  cur = [];
+  busy = false;
+  closeAll();
+  preview.textContent = '';
+  resetKeys();
+  state.guesses.forEach(g => { const res = evaluate(g); g.forEach((j, i) => setKey(j, res[i])); });
+  renderAll();
+  if (state.over) { const g = gen; setTimeout(() => { if (g === gen) openStats(); }, 300); }
+}
+
+/* 테스트용 버튼 */
+$('#btnNext').addEventListener('click', () => {
+  offset++;
+  save(OK, offset);
+  startGame();
+  toast('새 단어가 준비되었습니다');
+});
+$('#btnReset').addEventListener('click', () => {
+  offset = 0;
+  [SK, TK, OK].forEach(wipe);
+  startGame();
+  toast('테스트 기록을 초기화했습니다');
+});
+
+startGame();
+if (!load(SEEN, false)){ save(SEEN, true); $('#mHelp').classList.add('open'); }
+
+/* 점검용 */
+window.__ymkb = { decompose, compose, evaluate, answerFor, LIST, START_DAY, get answer(){ return WORD; } };
+})();
+</script>
+</body>
+</html>
