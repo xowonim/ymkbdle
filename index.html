@@ -77,7 +77,8 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .modal p{margin:0 0 6px;font-size:14px;line-height:1.6;letter-spacing:-.01em}
 .modal .sub{color:var(--sub);font-size:13px}
 .ex{margin:16px 0 0}
-.ex .row{gap:4px;margin-bottom:6px;min-height:0}
+#mHelp .modal{text-align:center;word-break:keep-all}
+.ex .row{gap:4px;margin-bottom:6px;min-height:0;justify-content:center}
 .ex .tile{width:34px;height:34px;font-size:16px}
 .hr{height:1px;background:var(--line);margin:16px 0}
 
@@ -512,7 +513,7 @@ function exRow(jamos, idx, st){
     [['ㅅ','ㅓ','ㅣ','ㅇ','ㅣ','ㅋ','ㅏ'], 5, 'correct', '자음 ‘ㅋ’은 올바른 자리에 있습니다.'],
     [['ㄴ','ㅗ','ㅈ','ㅗ','ㅁ','ㅣ'], 5, 'present', '모음 ‘ㅣ’는 잘못된 자리에 있습니다.'],
     [['ㅇ','ㅣ','ㅈ','ㅡ','ㅁ','ㅣ'], 3, 'absent', '모음 ‘ㅡ’는 어느 곳에도 맞지 않습니다.'],
-    [['ㅋ','ㅓ','ㅣ','ㅇ','ㅣ','ㅅ','ㅛ'], -1, '', '복합모음과 쌍자음, 겹받침은 더 작은 자모들로 풀어집니다. 자모는 중복될 수 있습니다.']
+    [['ㅇ','ㅣ','ㅅ','ㅅ','ㅓ','ㅣ','ㅇ','ㅣ'], -1, '', '복합모음과 쌍자음, 겹받침은 더 작은 자모들로 풀어집니다. 자모는 중복될 수 있습니다.']
   ];
   items.forEach(([jm, idx, st, txt]) => {
     box.appendChild(exRow(jm, idx, st));
