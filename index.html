@@ -150,8 +150,24 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 const TEST_MODE = false;
 
 /* ---------- 단어 목록 ---------- */
-const RAW = `어뮤즈, 비올라, 다운, 핀드, 플루이드, 코위스, 라인아웃, 로터스, 레이도스, 로사, 루드, 루트, 스와네글, 토닉, 트립, 트시크로, 벨벳, 모치, 키츠네, 타츠로, 히로토, 츄시로, 이치고, 아야토, 세츠나, 켄타, 미노리, 미로, 렌, 카이, 사쿠라, 유키, 신지, 우미, 케이쇼, 카오리, 토오루, 시온, 이오리, 츠토무, 헤이지, 유이토, 토마, 아스카, 아로마, 카논, 리온, 켄, 카이로, 루이, 토시미, 히라시, 아카리, 시류, 잇세이, 유우토, 소우, 시게루, 아츠시, 마모루, 아트, 우즈키, 미츠키, 이즈미, 로나, 주율, 레이센, 아키라, 츠바사, 보탄, 류, 시로, 미츠루, 루키하, 레미, 테이, 큐, 레이무, 유타, 사나기, 아우라, 치리, 사에, 키미, 노조미, 코하쿠, 이나, 케이코, 아이리, 세이카, 스바루, 히로, 사나에, 가라테, 댄스부, 밴드부, 사진부, 승마부, 양궁, 연극, 요리부, 육상, 토자부, 자습부, 해탐부, 후커스, 킹덤, 핀치, 이그나이어, 이비트리오, 대유잼조`;
-const LIST = [...new Set(RAW.split(',').map(s => s.trim()).filter(Boolean))];
+/* 단어 추가 방법: 맨 아래에 ['출제 시작일', `새 단어, 새 단어`] 한 줄을 추가하세요.
+   시작일은 반드시 '내일 이후'로 적어야 이미 나온 단어와 오늘의 단어가 바뀌지 않습니다. */
+const BATCHES = [
+  ['2026-11-07', `어뮤즈, 비올라, 다운, 핀드, 플루이드, 코위스, 라인아웃, 로터스, 레이도스, 로사, 루드, 루트, 스와네글, 토닉, 트립, 트시크로, 벨벳, 모치, 키츠네, 타츠로, 히로토, 츄시로, 이치고, 아야토, 세츠나, 켄타, 미노리, 미로, 렌, 카이, 사쿠라, 유키, 신지, 우미, 케이쇼, 카오리, 토오루, 시온, 이오리, 츠토무, 헤이지, 유이토, 토마, 아스카, 아로마, 카논, 리온, 켄, 카이로, 루이, 토시미, 히라시, 아카리, 시류, 잇세이, 유우토, 소우, 시게루, 아츠시, 마모루, 아트, 우즈키, 미츠키, 이즈미, 로나, 주율, 레이센, 아키라, 츠바사, 보탄, 류, 시로, 미츠루, 루키하, 레미, 테이, 큐, 레이무, 유타, 사나기, 아우라, 치리, 사에, 키미, 노조미, 코하쿠, 이나, 케이코, 아이리, 세이카, 스바루, 히로, 사나에, 가라테, 댄스부, 밴드부, 사진부, 승마부, 양궁, 연극, 요리부, 육상, 토자부, 자습부, 해탐부, 후커스, 킹덤, 핀치, 이그나이어, 이비트리오, 대유잼조, 소라, 참치, 닭, 트립고기, 버섯전골, 엑소시스트, 잠자리잡기, 말랑이, 피요피요, 히코미로, 히, 꾸요꾸요, 유메키보`],
+  ['2026-11-09', `오코노미야끼`],
+];
+/* 날짜를 지정해서 정답을 직접 정하고 싶을 때만 사용 (이미 공개된 날의 단어를 고정) */
+const OVERRIDE = { '2026-11-07': '마모루', '2026-11-08': '아야토' };
+const dayNum = s => Math.floor(Date.parse(s + 'T00:00:00Z') / 86400e3) - Math.floor(Date.UTC(2026, 10, 7) / 86400e3);
+const ENTRIES = [];
+BATCHES.forEach(([date, txt]) => {
+  txt.split(',').map(s => s.trim()).filter(Boolean).forEach(w => {
+    if (!ENTRIES.some(e => e.w === w)) ENTRIES.push({ w, from: dayNum(date) });
+  });
+});
+const LIST = ENTRIES.map(e => e.w);
+const OVERRIDE_DAY = {};
+Object.keys(OVERRIDE).forEach(k => { OVERRIDE_DAY[dayNum(k)] = OVERRIDE[k]; });
 
 /* ---------- 자모 처리 ---------- */
 const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
@@ -233,19 +249,19 @@ function mulberry32(a){
 /* 매일 랜덤으로 뽑되, 한 번 나온 단어는 이후 7일간 나오지 않습니다 (모든 단어를 소진해도 계속 이어짐) */
 const COOLDOWN = 7;
 function answerFor(d){
-  const n = LIST.length;
-  const win = Math.min(COOLDOWN, n - 1);
   const recent = [];
-  let pick = 0;
+  let pick = '';
   for (let i = 0; i <= d; i++){
-    const r = mulberry32(Math.imul(i + 1, 2654435761) ^ 0x5bd1e995);
-    const cand = [];
-    for (let k = 0; k < n; k++) if (!recent.includes(k)) cand.push(k);
-    pick = cand[Math.floor(r() * cand.length)];
+    if (OVERRIDE_DAY[i]) pick = OVERRIDE_DAY[i];
+    else {
+      const r = mulberry32(Math.imul(i + 1, 2654435761) ^ 0x2f6b9d41);
+      const pool = ENTRIES.filter(e => e.from <= i && !recent.includes(e.w));
+      pick = pool[Math.floor(r() * pool.length)].w;
+    }
     recent.push(pick);
-    if (recent.length > win) recent.shift();
+    if (recent.length > COOLDOWN) recent.shift();
   }
-  return LIST[pick];
+  return pick;
 }
 const BASE_DAY = Math.max(0, kstDay() - START_DAY);
 
@@ -609,7 +625,7 @@ function startGame(){
   ANS = decompose(WORD);
   N = ANS.length;
   state = load(SK, null);
-  if (!state || state.day !== DAY) state = { day: DAY, guesses: [], over: false, won: false, counted: false };
+  if (!state || state.day !== DAY || (state.word && state.word !== WORD)) state = { day: DAY, word: WORD, guesses: [], over: false, won: false, counted: false };
   stats = load(TK, null) || newStats();
   cur = [];
   busy = false;
